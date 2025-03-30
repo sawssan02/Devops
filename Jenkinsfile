@@ -2,7 +2,8 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = "localhost:5000/api:1.0"  // Utilisation de ton registry local
-        AWS_INSTANCE = "ec2-user@13.61.3.10"
+        AWS_INSTANCE = "ec2-user@13.61.3.10"    // Instance EC2
+        SSH_KEY_PATH = "C:\\Users\\sawssan\\Downloads\\JenkinsDocker.pem" // Chemin vers ta clé privée
     }
     stages {
         stage('Build') {
@@ -31,7 +32,7 @@ pipeline {
                 // Déployer l'image sur AWS en utilisant SSH
                 sshagent(['AWS_SSH_CREDENTIALS']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "docker pull ${DOCKER_IMAGE}:${BUILD_NUMBER} && \
+                    ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${AWS_INSTANCE} "docker pull ${DOCKER_IMAGE}:${BUILD_NUMBER} && \
                     docker stop web_app || true && \
                     docker rm web_app || true && \
                     docker run -d -p 80:8080 --name web_app ${DOCKER_IMAGE}:${BUILD_NUMBER}"
