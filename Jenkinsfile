@@ -31,10 +31,12 @@ pipeline {
                 // Déployer l'image sur AWS en utilisant SSH
                 sshagent(['AWS_SSH_CREDENTIALS']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "docker pull ${DOCKER_IMAGE}:${BUILD_NUMBER} && \
-                    docker stop web_app || true && \
-                    docker rm web_app || true && \
-                    docker run -d -p 80:8080 --name web_app ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
+                        which docker || (echo 'Docker not installed' && exit 1)
+                        docker pull ${DOCKER_IMAGE}:${BUILD_NUMBER} && \
+                        docker stop web_app || true && \
+                        docker rm web_app || true && \
+                        docker run -d -p 80:8080 --name web_app ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                     '''
                 }
             }
