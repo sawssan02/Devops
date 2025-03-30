@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  website:
+    image: php:apache
+    environment:
+      - USERNAME=root
+      - PASSWORD=root
+    volumes:
+      - ./website:/var/www/html
+    depends_on:
+      - simple-api
+    ports:
+      - "80:80"
+      
+  simple-api:
+    image: api:1.0
+    volumes:
+      - ./simple_api/student_age.json:/data/student_age.json
+    ports:
+      - "5000:5000"
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
