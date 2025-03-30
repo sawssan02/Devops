@@ -1,87 +1,43 @@
 pipeline {
     agent any
-
     environment {
-        // Définition des variables d'environnement
-        ImageRegistry = 'api:1.0'      // Nom de l'image Docker
-        EC2_IP = '13.60.14.131'        // IP de la machine EC2 AWS
-        DockerComposeFile = 'docker-compose.yml'  // Fichier Docker Compose
-        DotEnvFile = 'requirements.txt'  // Fichier des dépendances
+        DOCKER_IMAGE = "localhost:5000/api:1.0"  // Utilisation de ton registry local
+        AWS_INSTANCE = "ec2-user@13.61.3.10"
     }
-
     stages {
-        
-        // Étape de construction de l'image Docker
-        stage('Build Docker Image') {
+        stage('Build') {
             steps {
-                script {
-                    echo "Building Docker Image..."
-                    sh "docker build -t ${ImageRegistry}/${JOB_NAME}:${BUILD_NUMBER} ."
-                }
+                // Construire l'image Docker
+                sh 'docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
             }
         }
-
-        // Étape de test de l'image Docker (exécution locale et vérification)
         stage('Test Docker Image') {
             steps {
-                script {
-                    echo "Testing Docker Image..."
-                    sh "docker run -d -p 8080:80 ${ImageRegistry}/${JOB_NAME}:${BUILD_NUMBER}"
-                    sh "curl -f http://localhost:8080 || exit 1"  // Vérification de l'accessibilité
-                }
+                // Tester l'image construite en local
+                sh 'docker run --rm -d -p 8080:8080 --name test_container ${DOCKER_IMAGE}:${BUILD_NUMBER}'
+                sh 'sleep 10'  // Attendre le démarrage du conteneur
+                sh 'curl -f http://localhost:8080 || exit 1'
+                sh 'docker stop test_container'
             }
         }
-
-        // Étape de push de l'image Docker vers Docker Hub
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push to Local Registry') {
             steps {
-                script {
-                    echo "Pushing Docker Image to Docker Hub..."
-                    withCredentials([usernamePassword(credentialsId: 'docker-login', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        sh "echo $PASS | docker login -u $USER --password-stdin"
-                        sh "docker push ${ImageRegistry}/${JOB_NAME}:${BUILD_NUMBER}"
-                    }
-                }
+                // Pousser l'image vers le registre local (localhost:5000)
+                sh 'docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}'
             }
         }
-
-        // Étape de déploiement avec Docker Compose sur la machine EC2
-        stage('Deploy to EC2 via Docker Compose') {
+        stage('Deploy on AWS') {
             steps {
-                script {
-                    echo "Deploying Docker Compose on EC2 instance..."
-                    sshagent(['ec2']) {
-                        // Transfert des fichiers Docker Compose et requirements.txt sur la machine EC2
-                        sh """
-                        scp -o StrictHostKeyChecking=no ${DockerComposeFile} ${DotEnvFile} ubuntu@${EC2_IP}:/home/ubuntu/
-                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} 'docker-compose -f /home/ubuntu/${DockerComposeFile} --env-file /home/ubuntu/${DotEnvFile} down'
-                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_IP} 'docker-compose -f /home/ubuntu/${DockerComposeFile} --env-file /home/ubuntu/${DotEnvFile} up -d'
-                        """
-                    }
+                // Déployer l'image sur AWS en utilisant SSH
+                sshagent(['AWS_SSH_CREDENTIALS']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "docker pull ${DOCKER_IMAGE}:${BUILD_NUMBER} && \
+                    docker stop web_app || true && \
+                    docker rm web_app || true && \
+                    docker run -d -p 80:8080 --name web_app ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    '''
                 }
             }
-        }
-
-        // Étape de nettoyage (facultative mais recommandée pour libérer les ressources)
-        stage('Clean Up') {
-            steps {
-                script {
-                    echo "Cleaning up..."
-                    sh "docker system prune -f"  // Suppression des images et containers inutiles
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            echo "Pipeline completed."
-        }
-        success {
-            echo "Pipeline succeeded."
-        }
-        failure {
-            echo "Pipeline failed."
         }
     }
 }
