@@ -14,10 +14,10 @@ pipeline {
         stage('Test Docker Image') {
             steps {
                 // Tester l'image construite en local
-                sh 'docker run --rm -d -p 8080:8080 --name test_container ${DOCKER_IMAGE}:${BUILD_NUMBER}'
+                sh 'docker run --rm -d -p 8080:8080 --name mytest ${DOCKER_IMAGE}:${BUILD_NUMBER}'
                 sh 'sleep 10'  // Attendre le démarrage du conteneur
                 sh 'curl -f http://localhost:8080 || exit 1'
-                sh 'docker stop test_container'
+                sh 'docker stop mytest'
             }
         }
         stage('Push to Local Registry') {
