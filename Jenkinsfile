@@ -13,7 +13,7 @@ pipeline {
         }
         stage('Test Docker Image') {
             steps {
-                sh 'docker run --name mytest -d -p 5000:5000 ${DOCKER_IMAGE}:${IMAGE_TAG}'
+                sh 'docker run --name mytest -d -p 5001:5000 ${DOCKER_IMAGE}:${IMAGE_TAG}'
                 // Tester le conteneur
                 sh 'docker logs mytest'
 
