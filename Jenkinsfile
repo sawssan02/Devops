@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} .'
+                sh 'docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -f simple_api/Dockerfile simple_api/'
             }
         }
         stage('Test Docker Image') {
