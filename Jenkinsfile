@@ -25,10 +25,22 @@ pipeline {
                 sh 'docker rm mytest'
             }
         }
-        stage('Push to Local Registry') {
+       stage('Push to Local Registry') {
             steps {
-                // Pousser l'image vers le registre local avec le tag modifié
-                sh 'docker push ${DOCKER_IMAGE}-${IMAGE_TAG}'
+                // SSH vers EC2 et démarrer le registre si nécessaire
+                sshagent(['AWS_SSH_CREDENTIALS']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
+                    # Vérifier si le registre est en cours d'exécution
+                    if ! docker ps | grep -q 'registry'; then
+                        echo 'Registry not running, starting it...'
+                        docker run -d -p 5000:5000 --name registry registry:2
+                    fi
+
+                    # Pousser l'image vers le registre local
+                    docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    '''
+                }
             }
         }
         stage('Deploy on AWS') {
