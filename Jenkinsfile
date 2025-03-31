@@ -8,12 +8,15 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -f simple_api/Dockerfile simple_api/'
+                // Construction de l'image Docker avec le bon tag
+                sh 'docker build -t ${DOCKER_IMAGE}-${IMAGE_TAG} -f simple_api/Dockerfile simple_api/'
             }
         }
         stage('Test Docker Image') {
             steps {
-                sh 'docker run --name mytest -d -p 5001:5000 ${DOCKER_IMAGE}:${IMAGE_TAG}'
+                // Lancer le conteneur avec le nouveau tag
+                sh 'docker run --name mytest -d -p 5001:5000 ${DOCKER_IMAGE}-${IMAGE_TAG}'
+                
                 // Tester le conteneur
                 sh 'docker logs mytest'
 
@@ -24,7 +27,8 @@ pipeline {
         }
         stage('Push to Local Registry') {
             steps {
-                sh 'docker push ${DOCKER_IMAGE}:${IMAGE_TAG}'
+                // Pousser l'image vers le registre local avec le tag modifié
+                sh 'docker push ${DOCKER_IMAGE}-${IMAGE_TAG}'
             }
         }
         stage('Deploy on AWS') {
@@ -32,10 +36,10 @@ pipeline {
                 sshagent(['AWS_SSH_CREDENTIALS']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
-                    docker pull ${DOCKER_IMAGE}:${IMAGE_TAG} && \
+                    docker pull ${DOCKER_IMAGE}-${IMAGE_TAG} && \
                     docker stop web_app || true && \
                     docker rm web_app || true && \
-                    docker run -d -p 80:8080 --name web_app ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    docker run -d -p 80:8080 --name web_app ${DOCKER_IMAGE}-${IMAGE_TAG}"
                     '''
                 }
             }
