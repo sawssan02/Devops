@@ -33,7 +33,7 @@ pipeline {
         }
         stage('Deploy on AWS') {
             steps {
-                sshagent(['AWS_SSH_CREDENTIALS']) {
+                sshagent(['JenkinsDocker']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
                     docker pull ${DOCKER_IMAGE}-${IMAGE_TAG} && \
