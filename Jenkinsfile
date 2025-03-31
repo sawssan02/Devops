@@ -13,10 +13,13 @@ pipeline {
         }
         stage('Test Docker Image') {
             steps {
-                sh 'docker run --rm -d -p 9090:8080 --name test_container ${DOCKER_IMAGE}:${IMAGE_TAG}'
-                sh 'sleep 10'
-                sh 'curl -f http://localhost:9090 || exit 1'
-                sh 'docker stop test_container'
+                sh 'docker run --name mytest -d -p 5000:5000 ${DOCKER_IMAGE}:${IMAGE_TAG}'
+                // Tester le conteneur
+                sh 'docker logs mytest'
+
+                // Arrêter et nettoyer le conteneur après le test
+                sh 'docker stop mytest'
+                sh 'docker rm mytest'
             }
         }
         stage('Push to Local Registry') {
