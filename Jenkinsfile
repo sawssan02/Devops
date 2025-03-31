@@ -28,7 +28,7 @@ pipeline {
        stage('Push to Local Registry') {
             steps {
                 // SSH vers EC2 et démarrer le registre si nécessaire
-                sshagent(['AWS_SSH_CREDENTIALS']) {
+                sshagent(['AWS_SSH_CREDENTIAL']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
                     # Vérifier si le registre est en cours d'exécution
@@ -45,7 +45,7 @@ pipeline {
         }
         stage('Deploy on AWS') {
             steps {
-                sshagent(['AWS_SSH_CREDENTIALS']) {
+                sshagent(['AWS_SSH_CREDENTIAL']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
                     docker pull ${DOCKER_IMAGE}-${IMAGE_TAG} && \
