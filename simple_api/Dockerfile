@@ -42,7 +42,7 @@ RUN pip3 install -r requirements.txt
 RUN mkdir /data
 
 VOLUME [ "/data" ]
-COPY simple_api/student_age.json /data/
+COPY student_age.json /data/
 EXPOSE 5000
 
 CMD [ "python3", "student_age.py" ]
