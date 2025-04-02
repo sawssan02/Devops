@@ -14,9 +14,7 @@ services:
       - "80:80"
       
   simple-api:
-    image: api:1.0
-    volumes:
-      - ./simple_api/student_age.json:/data/student_age.json
+    build: ./simple_api
     ports:
       - "5000:5000"
     networks:
