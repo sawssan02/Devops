@@ -70,9 +70,10 @@ pipeline {
                     docker pull $REGISTRY/nginx-server && \
                     docker stop api || true && \
                     docker rm api || true && \
+                    docker cp simple_api/student_age.json api:/data
                     docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data $REGISTRY/$IMAGE_NAME && \
                     docker run -d -p 80:80 --name nginx $REGISTRY/nginx-server && \
-                    docker cp simple_api/student_age.json api:/data'
+                    '
                 """
             }
         }
