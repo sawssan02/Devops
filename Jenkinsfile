@@ -31,8 +31,7 @@ pipeline {
                 sh 'docker cp simple_api/student_age.json api_test:/data'
                 sh 'sleep 5'
                 sh 'curl -u root:root -X GET http://localhost:5000/supmit/api/v1.0/get_student_ages'
-                sh 'docker stop api_test || true'
-                sh 'docker rm api_test || true'
+                sh 'docker stop api_test && docker rm api_test'
             }
         }
 
