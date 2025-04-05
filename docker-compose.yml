@@ -1,12 +1,27 @@
 version: '3'
 services:
+  # Service backend pour l'API
   api:
-    image: docker.io/sawssan02/api:1.0
+    build:
+      context: ./simple_api
+      dockerfile: Dockerfile
+    volumes:
+      - ./simple_api:/app
     ports:
       - "5000:5000"
-    volumes:
-      - /home/ubuntu/data:/data
-  nginx:
-    image: docker.io/sawssan02/nginx-server
+  
+  # Service PHP avec Nginx
+  php-nginx:
+    build:
+      context: ./website
+      dockerfile: Dockerfile
     ports:
       - "80:80"
+    depends_on:
+      - php-fpm
+  
+  # Service PHP-FPM
+  php-fpm:
+    image: php:7.4-fpm-alpine
+    volumes:
+      - ./website:/usr/share/nginx/html
