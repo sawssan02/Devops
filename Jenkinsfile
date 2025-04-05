@@ -63,21 +63,26 @@ pipeline {
        stage('Déployer sur AWS') {
     steps {
         withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
-            sshagent(['AWS_SSH_CREDENTIAL']) {
-                sh """
-                    ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no 'echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
-                    docker pull $REGISTRY/$IMAGE_NAME && \
-                    docker pull $REGISTRY/nginx-server && \
-                    docker stop api || true && \
-                    docker rm api || true && \
-                    mkdir -p /home/ec2-user/data && \
-                    cp simple_api/student_age.json /home/ec2-user/data/student_age.json && \
-                    docker run -d -p 5000:5000 --name api -v /home/ec2-user/data:/data $REGISTRY/$IMAGE_NAME && \
-                    docker run -d -p 80:80 --name nginx $REGISTRY/nginx-server
-                    '
-                """
-            }
-        }
+    sshagent(['AWS_SSH_CREDENTIAL']) {
+        sh '''
+            # Copier le fichier vers l'EC2
+            scp -o StrictHostKeyChecking=no simple_api/student_age.json ec2-user@13.61.3.10:/home/ec2-user/student_age.json
+
+            # Se connecter à l'instance EC2 et exécuter les commandes Docker
+            ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no '
+                echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
+                docker pull docker.io/sawssan02/api:1.0 && \
+                docker pull docker.io/sawssan02/nginx-server && \
+                docker stop api || true && \
+                docker rm api || true && \
+                docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data docker.io/sawssan02/api:1.0 && \
+                docker run -d -p 80:80 --name nginx docker.io/sawssan02/nginx-server && \
+                docker cp /home/ec2-user/student_age.json api:/data
+            '
+        '''
+    }
+}
+
     }
 }
 // Nouvelle étape pour exécuter docker-compose
