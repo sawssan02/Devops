@@ -20,6 +20,15 @@ pipeline {
                 }
             }
         }
+        stage('Construire l\'image Nginx') {
+            steps {
+                dir('myapp/nginx') {
+                    // Construire l'image Nginx
+                    sh 'docker build -t nginx-server .'
+                }
+            }
+        }
+
 
         stage('Test Docker image') {
             steps {
@@ -28,6 +37,7 @@ pipeline {
                 
                 // Lancer le nouveau conteneur
                 sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data $IMAGE_NAME'
+                sh 'docker run -d -p 80:80 --name test-nginx nginx-server'
                 sh 'docker cp simple_api/student_age.json api_test:/data'
                 sh 'sleep 5'
                 sh 'curl -u root:root -X GET http://localhost:5000/supmit/api/v1.0/get_student_ages'
@@ -40,14 +50,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
                     sh 'docker push $REGISTRY/$IMAGE_NAME'
-                }
-            }
-        }
-        stage('Déployer avec Docker Compose') {
-            steps {
-                dir('.') {
-                    sh 'docker-compose down' // Arrêter et supprimer les anciens services
-                    sh 'docker-compose up --build -d' // Construire et démarrer les services en mode détaché
+                    sh 'docker push $REGISTRY/nginx-server'
                 }
             }
         }
@@ -59,9 +62,11 @@ pipeline {
                 sh """
                     ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no 'echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
                     docker pull $REGISTRY/$IMAGE_NAME && \
+                    docker pull $REGISTRY/nginx-server && \
                     docker stop api || true && \
                     docker rm api || true && \
                     docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data $REGISTRY/$IMAGE_NAME'
+                    docker run -d -p 80:80 --name nginx $REGISTRY/nginx-server'
                     docker cp simple_api/student_age.json api:/data
                 """
             }
