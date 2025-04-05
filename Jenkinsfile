@@ -24,6 +24,8 @@ pipeline {
             steps {
                 dir('website') {
                     // Construire l'image Nginx
+                    // Vérifier si le Dockerfile est présent
+                    sh 'ls -al'
                     sh 'docker build -t nginx-server .'
                 }
             }
