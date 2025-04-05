@@ -50,7 +50,7 @@ pipeline {
             steps {
                 sshagent(['AWS_SSH_CREDENTIAL']) {
                     sh '''
-                    ssh ec2-user@13.61.3.10 '
+                    ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no '
                         docker pull $REGISTRY/$IMAGE_NAME &&
                         docker stop api || true &&
                         docker rm api || true &&
