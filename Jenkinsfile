@@ -43,17 +43,27 @@ pipeline {
             }
         }
 
-        stage('Déployer sur AWS') {
+       stage('Déployer sur AWS') {
     steps {
         withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
+            // Définir l'utilisateur Docker
             def DOCKER_USER = 'sawssan02'
+
             sshagent(['AWS_SSH_CREDENTIAL']) {
                 sh """
+                    # Connexion SSH à l'instance EC2 et exécution des commandes Docker
                     ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
+                        # Connexion Docker avec le mot de passe
                         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+
+                        # Tirer l'image Docker et la déployer
                         docker pull $REGISTRY/$IMAGE_NAME &&
+
+                        # Arrêter et supprimer l'ancien conteneur (s'il existe)
                         docker stop api || true &&
                         docker rm api || true &&
+
+                        # Lancer le nouveau conteneur
                         docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME
                     EOF
                 """
