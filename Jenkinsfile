@@ -52,7 +52,7 @@ pipeline {
                     docker pull $REGISTRY/$IMAGE_NAME && \
                     docker stop api || true && \
                     docker rm api || true && \
-                    docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data $REGISTRY/$IMAGE_NAME'
+                    docker run -d -p 5000:5000 --name api -v /home/data:/data $REGISTRY/$IMAGE_NAME'
                 """
             }
         }
