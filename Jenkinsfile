@@ -66,7 +66,7 @@ pipeline {
                     sh 'docker ps'
                     
                     // Exécuter la commande pour lister le contenu du répertoire /data dans le conteneur
-                    sh 'docker exec -it api ls -l /data'
+                    sh 'docker exec  api ls -l /data'
                 }
             }
         }
