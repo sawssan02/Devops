@@ -22,7 +22,7 @@ pipeline {
         }
         stage('Construire l\'image Nginx') {
             steps {
-                dir('myapp/nginx') {
+                dir('website') {
                     // Construire l'image Nginx
                     sh 'docker build -t nginx-server .'
                 }
