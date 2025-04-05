@@ -22,13 +22,14 @@ pipeline {
         }
 
         stage('Test Docker image') {
-            steps {
-                sh 'docker run -d -p 5000:5000 --name api_test -v $(pwd)/api/student_age.json:/data/student_age.json $IMAGE_NAME'
-                sh 'sleep 5'
-                sh 'curl -u admin:admin http://localhost:5000/SUPMIT/api/v1.0/get_student_ages'
-                sh 'docker stop api_test && docker rm api_test'
-            }
+        steps {
+            sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data api:1.0'
+            sh 'sleep 5'
+            sh 'curl -u admin:admin http://localhost:5000/SUPMIT/api/v1.0/get_student_ages'
+            sh 'docker stop api_test && docker rm api_test'
         }
+    }
+
 
         stage('Pousser sur Docker Hub') {
             steps {
