@@ -44,25 +44,22 @@ pipeline {
         }
 
         stage('Déployer sur AWS') {
-            steps {
-                sshagent(['AWS_SSH_CREDENTIAL']) {
-                    sh """
-                        ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
-                            echo "Registry: $REGISTRY"
-                            echo "Image Name: $IMAGE_NAME"
-
-                            # Connexion à Docker Hub sur l'instance EC2
-                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
-
-                            # Pull de l'image depuis Docker Hub
-                            docker pull $REGISTRY/$IMAGE_NAME &&
-                            docker stop api || true &&
-                            docker rm api || true &&
-                            docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME
-                        EOF
-                    """
-                }
+    steps {
+        withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
+            sshagent(['AWS_SSH_CREDENTIAL']) {
+                sh """
+                    ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker pull $REGISTRY/$IMAGE_NAME &&
+                        docker stop api || true &&
+                        docker rm api || true &&
+                        docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME
+                    EOF
+                """
             }
         }
+    }
+}
+
     }
 }
