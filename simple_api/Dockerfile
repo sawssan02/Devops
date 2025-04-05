@@ -40,7 +40,7 @@ COPY requirements.txt /
 RUN pip3 install -r requirements.txt
 
 RUN mkdir -p /data
-
+COPY student_age.json /data
 
 VOLUME [ "/data" ]
 
