@@ -46,6 +46,7 @@ pipeline {
         stage('Déployer sur AWS') {
     steps {
         withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
+            def DOCKER_USER = 'sawssan02'
             sshagent(['AWS_SSH_CREDENTIAL']) {
                 sh """
                     ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
