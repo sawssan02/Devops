@@ -54,7 +54,7 @@ pipeline {
                                 docker pull $REGISTRY/$IMAGE_NAME || exit 1
                                 docker stop api || true
                                 docker rm api || true
-                                docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME || exit 1
+                                docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data $REGISTRY/$IMAGE_NAME
                             EOF
                         """
                     }
