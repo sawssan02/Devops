@@ -37,14 +37,14 @@ pipeline {
 
 
         stage('Pousser sur Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    sh 'docker tag $IMAGE_NAME $REGISTRY/$IMAGE_NAME'
-                    sh 'docker push $REGISTRY/$IMAGE_NAME'
-                }
-            }
+    steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+            sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
+            sh 'docker push api:1.0'
         }
+    }
+}
+
 
         stage('Déployer sur AWS') {
             steps {
