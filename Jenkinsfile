@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "api:1.0"
+        IMAGE_NAME = "sawssan02/api:1.0"
         REGISTRY = "docker.io/sawssan02"
     }
 
