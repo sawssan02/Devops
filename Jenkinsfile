@@ -46,12 +46,11 @@ pipeline {
         stage('Déployer sur AWS') {
             steps {
                 withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
-                    def DOCKER_USER = 'sawssan02'
 
                     sshagent(['AWS_SSH_CREDENTIAL']) {
                         sh """
                             ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
-                                echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin || exit 1
+                                echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin || exit 1
                                 docker pull $REGISTRY/$IMAGE_NAME || exit 1
                                 docker stop api || true
                                 docker rm api || true
