@@ -59,17 +59,5 @@ pipeline {
     }
 }
 
-        stage('Vérifier contenu /data') {
-            steps {
-                script {
-                    // Vérifier que le conteneur est en cours d'exécution
-                    sh 'docker ps'
-                    sh 'docker logs api'
-                    // Exécuter la commande pour lister le contenu du répertoire /data dans le conteneur
-                    sh 'docker exec  api ls -l /data'
-                }
-            }
-        }
-
     }
 }
