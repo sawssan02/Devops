@@ -59,7 +59,6 @@ pipeline {
     }
 }
 
-stages {
         stage('Vérifier contenu /data') {
             steps {
                 script {
@@ -71,7 +70,6 @@ stages {
                 }
             }
         }
-    }
 
     }
 }
