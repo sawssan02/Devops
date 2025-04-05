@@ -1,57 +1,55 @@
 pipeline {
     agent any
+
     environment {
-        DOCKER_IMAGE = "localhost:5000/api"
-        IMAGE_TAG = "1.0-${BUILD_NUMBER}"  // Utilisation du "-" au lieu de ":"
-        AWS_INSTANCE = "ec2-user@13.61.3.10"
+        IMAGE_NAME = "api:1.0"
+        REGISTRY = "docker.io/sawssan02"
     }
+
     stages {
-        stage('Build') {
+        stage('Cloner le repo') {
             steps {
-                // Construction de l'image Docker avec le bon tag
-                sh 'docker build -t ${DOCKER_IMAGE}-${IMAGE_TAG} -f simple_api/Dockerfile simple_api/'
+                git 'https://github.com/sawssan02/Devops.git'
             }
         }
-        stage('Test Docker Image') {
-            steps {
-                // Lancer le conteneur avec le nouveau tag
-                sh 'docker run --name mytest -d -p 5001:5000 ${DOCKER_IMAGE}-${IMAGE_TAG}'
-                
-                // Tester le conteneur
-                sh 'docker logs mytest'
 
-                // Arrêter et nettoyer le conteneur après le test
-                sh 'docker stop mytest'
-                sh 'docker rm mytest'
-            }
-        }
-       stage('Push to Local Registry') {
+        stage('Build Docker image') {
             steps {
-                // SSH vers EC2 et démarrer le registre si nécessaire
-                sshagent(['AWS_SSH_CREDENTIAL']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
-                    # Vérifier si le registre est en cours d'exécution
-                    if ! docker ps | grep -q 'registry'; then
-                        echo 'Registry not running, starting it...'
-                        docker run -d -p 5000:5000 --name registry registry:2
-                    fi
-
-                    # Pousser l'image vers le registre local
-                    docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
-                    '''
+                dir('api') {
+                    sh 'docker build -t $IMAGE_NAME .'
                 }
             }
         }
-        stage('Deploy on AWS') {
+
+        stage('Test Docker image') {
+            steps {
+                sh 'docker run -d -p 5000:5000 --name api_test -v $(pwd)/api/student_age.json:/data/student_age.json $IMAGE_NAME'
+                sh 'sleep 5'
+                sh 'curl -u admin:admin http://localhost:5000/SUPMIT/api/v1.0/get_student_ages'
+                sh 'docker stop api_test && docker rm api_test'
+            }
+        }
+
+        stage('Pousser sur Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker tag $IMAGE_NAME $REGISTRY/$IMAGE_NAME'
+                    sh 'docker push $REGISTRY/$IMAGE_NAME'
+                }
+            }
+        }
+
+        stage('Déployer sur AWS') {
             steps {
                 sshagent(['AWS_SSH_CREDENTIAL']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ${AWS_INSTANCE} "
-                    docker pull ${DOCKER_IMAGE}-${IMAGE_TAG} && \
-                    docker stop web_app || true && \
-                    docker rm web_app || true && \
-                    docker run -d -p 80:8080 --name web_app ${DOCKER_IMAGE}-${IMAGE_TAG}"
+                    ssh ec2-user@13.61.3.10 '
+                        docker pull $REGISTRY/$IMAGE_NAME &&
+                        docker stop api || true &&
+                        docker rm api || true &&
+                        docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME
+                    '
                     '''
                 }
             }
