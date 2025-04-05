@@ -49,25 +49,21 @@ pipeline {
         withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
     sshagent(['AWS_SSH_CREDENTIAL']) {
         sh '''
-            # Copier le fichier vers l'EC2
-            scp -o StrictHostKeyChecking=no simple_api/student_age.json ec2-user@13.61.3.10:/home/ec2-user/student_age.json
-
-            # Se connecter à l'instance EC2 et exécuter les commandes Docker
             ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no '
-                echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
-                docker pull docker.io/sawssan02/api:1.0 && \
-                
-                # Supprimer les conteneurs existants si nécessaire
-                docker stop api || true && \
-                docker rm api || true && \
-                
-                # Démarrer les nouveaux conteneurs
-                docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data docker.io/sawssan02/api:1.0 && \
-                
-                # Copier le fichier dans le conteneur API
-                docker cp simple_api/student_age.json api_test:/data
-                
-            '
+    echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
+    docker pull docker.io/sawssan02/api:1.0 && \
+    
+    # Supprimer les conteneurs existants si nécessaire
+    docker stop api || true && \
+    docker rm api || true && \
+    
+    # Démarrer les nouveaux conteneurs
+    docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data docker.io/sawssan02/api:1.0 && \
+    
+    # Copier le fichier dans le conteneur API
+    docker cp /home/ec2-user/student_age.json api:/data
+'
+
         '''
     }
 }
