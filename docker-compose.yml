@@ -1,27 +1,12 @@
-version: "3.8"
-
+version: '3'
 services:
-  website:
-    image: php:apache
-    environment:
-      - USERNAME=root
-      - PASSWORD=root
-    volumes:
-      - ./website:/var/www/html
-    depends_on:
-      - simple-api
-    ports:
-      - "80:80"
-      
-  simple-api:
-    image: api:1.0
-    volumes:
-      - ./simple_api/student_age.json:/data/student_age.json
+  api:
+    image: docker.io/sawssan02/api:1.0
     ports:
       - "5000:5000"
-    networks:
-      - my-network
-
-networks:
-  my-network:
-    driver: bridge
+    volumes:
+      - /home/ubuntu/data:/data
+  nginx:
+    image: docker.io/sawssan02/nginx-server
+    ports:
+      - "80:80"
