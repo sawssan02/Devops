@@ -46,7 +46,7 @@ pipeline {
 }
 
 
-        stages {
+        
         stage('Déployer sur AWS') {
             steps {
                 sshagent(['AWS_SSH_CREDENTIAL']) {
@@ -63,6 +63,5 @@ pipeline {
                 }
             }
         }
-    }
     }
 }
