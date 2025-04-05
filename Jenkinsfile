@@ -40,7 +40,7 @@ pipeline {
     steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
             sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
-            sh 'docker push api:1.0'
+            sh 'docker push docker push sawssan02/api:1.0'
         }
     }
 }
