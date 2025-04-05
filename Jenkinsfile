@@ -59,7 +59,19 @@ pipeline {
     }
 }
 
-
+stages {
+        stage('Vérifier contenu /data') {
+            steps {
+                script {
+                    // Vérifier que le conteneur est en cours d'exécution
+                    sh 'docker ps'
+                    
+                    // Exécuter la commande pour lister le contenu du répertoire /data dans le conteneur
+                    sh 'docker exec -it api ls -l /data'
+                }
+            }
+        }
+    }
 
     }
 }
