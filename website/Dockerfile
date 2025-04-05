@@ -1,11 +1,8 @@
-# Étape 1 : Utiliser une image Nginx
-FROM nginx:alpine
+# Utiliser l'image PHP avec Apache
+FROM php:7.4-apache
 
-# Copier le fichier nginx.conf (si vous avez un fichier de configuration personnalisé)
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copier le fichier index.php dans le répertoire racine de Nginx
-COPY index.php /usr/share/nginx/html/
+# Copier les fichiers frontend dans l'image
+COPY index.php /var/www/html/
 
 # Exposer le port 80
 EXPOSE 80
