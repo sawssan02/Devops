@@ -27,6 +27,7 @@ pipeline {
                     // Vérifier si le Dockerfile est présent
                     sh 'ls -al'
                     sh 'docker build -t nginx-server .'
+                    sh 'docker tag nginx-server $REGISTRY/nginx-server'
                 }
             }
         }
