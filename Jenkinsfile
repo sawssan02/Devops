@@ -18,62 +18,63 @@ pipeline {
                 // Construire l'image API
                 dir('simple_api') {
                     sh 'docker build --no-cache -t $IMAGE_NAME .'
-                    sh 'docker tag $IMAGE_NAME $REGISTRY/$IMAGE_NAME'
-                }
-                // Construire l'image Nginx avec PHP
-                dir('website') {
-                    sh 'docker build -t nginx-php .'
-                    sh 'docker tag nginx-php $REGISTRY/nginx-php'
                 }
             }
         }
 
-        stage('Test Docker images') {
+        stage('Test Docker image') {
             steps {
-                // Tester les images Docker en local
-                sh 'docker-compose -f docker-compose.yml up -d'
-                sh 'sleep 10'
-                sh 'curl -I http://localhost:80' // Vérifier que Nginx fonctionne
-                sh 'curl -I http://localhost:5000/supmit/api/v1.0/get_student_ages' // Vérifier l'API
+                // Supprimer le conteneur s'il existe déjà
+                sh 'docker rm -f api_test || true'
+                // Lancer le nouveau conteneur
+                sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data $IMAGE_NAME'
+                sh 'docker cp simple_api/student_age.json api_test:/data'
+                sh 'sleep 5'
+                sh 'curl -u root:root -X GET http://localhost:5000/supmit/api/v1.0/get_student_ages'
+                sh 'docker stop api_test && docker rm api_test'
             }
         }
-        stage('Push Docker images to Docker Hub') {
+
+        stage('Pousser sur Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
                     sh 'docker push $REGISTRY/$IMAGE_NAME'
-                    sh 'docker push $REGISTRY/nginx-php'
                 }
             }
         }
-      stage('Deploy to AWS') {
-            steps {
-                withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
-                    sshagent(['AWS_SSH_CREDENTIAL']) {
-                        sh '''
-                            # Copier les fichiers sur l'EC2
-                            scp -o StrictHostKeyChecking=no simple_api/student_age.json ec2-user@13.61.3.10:/home/ec2-user/student_age.json
 
-                            # Se connecter à l'instance EC2 et déployer avec Docker Compose
-                            ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no '
-                                echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
-                                docker pull docker.io/sawssan02/api:1.0 && \
-                                docker pull docker.io/sawssan02/nginx-php && \
-                                
-                                # Supprimer les conteneurs existants si nécessaire
-                                docker-compose -f /home/ec2-user/docker-compose.yml down && \
-                                
-                                # Démarrer les nouveaux conteneurs
-                                docker-compose -f /home/ec2-user/docker-compose.yml up -d && \
-                                
-                                # Copier les fichiers dans le conteneur API
-                                docker cp /home/ec2-user/student_age.json api:/data
-                            '
-                        '''
-                    }
-                }
-            }
-        }
+       stage('Déployer sur AWS') {
+    steps {
+        withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
+    sshagent(['AWS_SSH_CREDENTIAL']) {
+        sh '''
+            # Copier le fichier vers l'EC2
+            scp -o StrictHostKeyChecking=no simple_api/student_age.json ec2-user@13.61.3.10:/home/ec2-user/student_age.json
+
+            # Se connecter à l'instance EC2 et exécuter les commandes Docker
+            ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no '
+                echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
+                docker pull docker.io/sawssan02/api:1.0 && \
+                
+                # Supprimer les conteneurs existants si nécessaire
+                docker stop api || true && \
+                docker rm api || true && \
+                
+                # Démarrer les nouveaux conteneurs
+                docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data docker.io/sawssan02/api:1.0 && \
+                
+                # Copier le fichier dans le conteneur API
+                sh 'docker cp simple_api/student_age.json api_test:/data'
+                
+            '
+        '''
+    }
+}
+
+
+    }
+}
 // Nouvelle étape pour exécuter docker-compose
         
     }
