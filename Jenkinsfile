@@ -50,16 +50,16 @@ pipeline {
         stage('Déployer sur AWS') {
             steps {
                 sshagent(['AWS_SSH_CREDENTIAL']) {
-                    sh '''
-                        ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no << 'EOF'
+                    sh """
+                        ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
                             echo "Registry: $REGISTRY"
                             echo "Image Name: $IMAGE_NAME"
-                            docker pull "$REGISTRY/$IMAGE_NAME" &&
+                            docker pull $REGISTRY/$IMAGE_NAME &&
                             docker stop api || true &&
                             docker rm api || true &&
-                            docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json "$REGISTRY/$IMAGE_NAME"
+                            docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME
                         EOF
-                    '''
+                    """
                 }
             }
         }
