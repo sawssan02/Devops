@@ -54,8 +54,6 @@ pipeline {
                     docker stop api || true && \
                     docker rm api || true && \
                     docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data $REGISTRY/$IMAGE_NAME'
-                    docker pull php:7.4-apache && \
-                    docker run -d -p 80:80 --name php-web -v /home/ubuntu/html:/var/www/html php:7.4-apache'
                     docker cp simple_api/student_age.json api:/data
                 """
             }
