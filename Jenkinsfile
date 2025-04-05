@@ -65,7 +65,7 @@ pipeline {
                 docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data docker.io/sawssan02/api:1.0 && \
                 
                 # Copier le fichier dans le conteneur API
-                sh 'docker cp simple_api/student_age.json api_test:/data'
+                docker cp simple_api/student_age.json api_test:/data
                 
             '
         '''
