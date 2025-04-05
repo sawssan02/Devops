@@ -51,22 +51,15 @@ pipeline {
 
             sshagent(['AWS_SSH_CREDENTIAL']) {
                 sh """
-                    # Connexion SSH à l'instance EC2 et exécution des commandes Docker
-                    ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
-                        # Connexion Docker avec le mot de passe
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+    ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin || exit 1
+        docker pull $REGISTRY/$IMAGE_NAME || exit 1
+        docker stop api || true
+        docker rm api || true
+        docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME || exit 1
+    EOF
+"""
 
-                        # Tirer l'image Docker et la déployer
-                        docker pull $REGISTRY/$IMAGE_NAME &&
-
-                        # Arrêter et supprimer l'ancien conteneur (s'il existe)
-                        docker stop api || true &&
-                        docker rm api || true &&
-
-                        # Lancer le nouveau conteneur
-                        docker run -d -p 5000:5000 --name api -v /home/ubuntu/data/student_age.json:/data/student_age.json $REGISTRY/$IMAGE_NAME
-                    EOF
-                """
             }
         }
     }
