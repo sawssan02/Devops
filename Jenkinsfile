@@ -43,7 +43,7 @@ pipeline {
             }
         }
 
-       stage('Déployer sur AWS') {
+        stage('Déployer sur AWS') {
             steps {
                 withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
                     def DOCKER_USER = 'sawssan02'
@@ -62,9 +62,5 @@ pipeline {
                 }
             }
         }
-        }
-    }
-}
-
     }
 }
