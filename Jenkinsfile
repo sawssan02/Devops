@@ -43,11 +43,11 @@ pipeline {
             }
         }
 
-        stage('Déployer sur AWS') {
+       stage('Déployer sur AWS') {
             steps {
                 withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
                     sshagent(['AWS_SSH_CREDENTIAL']) {
-                        sh """
+                        sh '''
                             ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
                                 echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin || exit 1
                                 docker pull $REGISTRY/$IMAGE_NAME || exit 1
@@ -55,7 +55,7 @@ pipeline {
                                 docker rm api || true
                                 docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data $REGISTRY/$IMAGE_NAME
                             EOF
-                        """
+                        '''
                     }
                 }
             }
