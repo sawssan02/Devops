@@ -1,27 +1,27 @@
-version: '3'
+version: "3.8"
+
 services:
-  # Service backend pour l'API
-  api:
-    build:
-      context: ./simple_api
-      dockerfile: Dockerfile
+  website:
+    image: php:apache
+    environment:
+      - USERNAME=root
+      - PASSWORD=root
     volumes:
-      - ./simple_api:/app
-    ports:
-      - "5000:5000"
-  
-  # Service PHP avec Nginx
-  php-nginx:
-    build:
-      context: ./website
-      dockerfile: Dockerfile
+      - ./website:/var/www/html
+    depends_on:
+      - simple-api
     ports:
       - "80:80"
-    depends_on:
-      - php-fpm
-  
-  # Service PHP-FPM
-  php-fpm:
-    image: php:7.4-fpm-alpine
+      
+  simple-api:
+    image: api:1.0
     volumes:
-      - ./website:/usr/share/nginx/html
+      - ./simple_api/student_age.json:/data/student_age.json
+    ports:
+      - "5000:5000"
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
