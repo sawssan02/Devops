@@ -50,6 +50,8 @@ pipeline {
             steps {
                 sshagent(['AWS_SSH_CREDENTIAL']) {
                     sh '''
+                        echo "Registry: $REGISTRY"
+                        echo "Image Name: $IMAGE_NAME"
                        ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no '
                         docker pull "$REGISTRY/$IMAGE_NAME" &&
                         docker stop api || true &&
