@@ -73,15 +73,24 @@ pipeline {
                 echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
                 docker pull docker.io/sawssan02/api:1.0 && \
                 docker pull docker.io/sawssan02/nginx-server && \
+                
+                # Supprimer les conteneurs existants si nécessaire
                 docker stop api || true && \
                 docker rm api || true && \
+                docker stop nginx || true && \
+                docker rm nginx || true && \
+                
+                # Démarrer les nouveaux conteneurs
                 docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data docker.io/sawssan02/api:1.0 && \
                 docker run -d -p 80:80 --name nginx docker.io/sawssan02/nginx-server && \
+                
+                # Copier le fichier dans le conteneur API
                 docker cp /home/ec2-user/student_age.json api:/data
             '
         '''
     }
 }
+
 
     }
 }
