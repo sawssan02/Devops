@@ -43,6 +43,14 @@ pipeline {
                 }
             }
         }
+        stage('Déployer avec Docker Compose') {
+            steps {
+                dir('.') {
+                    sh 'docker-compose down' // Arrêter et supprimer les anciens services
+                    sh 'docker-compose up --build -d' // Construire et démarrer les services en mode détaché
+                }
+            }
+        }
 
        stage('Déployer sur AWS') {
     steps {
@@ -60,6 +68,7 @@ pipeline {
         }
     }
 }
-
+// Nouvelle étape pour exécuter docker-compose
+        
     }
 }
