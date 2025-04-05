@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Cloner le repo') {
             steps {
-                git 'https://github.com/sawssan02/Devops.git'
+                git branch: 'main', url: 'https://github.com/sawssan02/Devops.git'
             }
         }
 
