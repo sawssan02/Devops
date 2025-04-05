@@ -22,31 +22,27 @@ pipeline {
         }
 
         stage('Test Docker image') {
-    steps {
-        // Supprimer le conteneur s'il existe déjà
-        sh 'docker rm -f api_test || true'
+            steps {
+                // Supprimer le conteneur s'il existe déjà
+                sh 'docker rm -f api_test || true'
 
-        // Lancer le nouveau conteneur
-        sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data api:1.0'
-        sh 'sleep 5'
-        sh 'curl -u admin:admin http://localhost:5000/SUPMIT/api/v1.0/get_student_ages'
-        sh 'docker stop api_test && docker rm api_test'
-    }
-}
-
-
+                // Lancer le nouveau conteneur
+                sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data $IMAGE_NAME'
+                sh 'sleep 5'
+                sh 'curl -u admin:admin http://localhost:5000/SUPMIT/api/v1.0/get_student_ages'
+                sh 'docker stop api_test && docker rm api_test'
+            }
+        }
 
         stage('Pousser sur Docker Hub') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-            sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
-            sh 'docker push sawssan02/api:1.0'
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
+                    sh 'docker push $IMAGE_NAME'
+                }
+            }
         }
-    }
-}
 
-
-        
         stage('Déployer sur AWS') {
             steps {
                 sshagent(['AWS_SSH_CREDENTIAL']) {
@@ -54,6 +50,11 @@ pipeline {
                         ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no <<EOF
                             echo "Registry: $REGISTRY"
                             echo "Image Name: $IMAGE_NAME"
+
+                            # Connexion à Docker Hub sur l'instance EC2
+                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+
+                            # Pull de l'image depuis Docker Hub
                             docker pull $REGISTRY/$IMAGE_NAME &&
                             docker stop api || true &&
                             docker rm api || true &&
