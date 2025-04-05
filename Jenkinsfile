@@ -29,7 +29,7 @@ pipeline {
                 // Lancer le nouveau conteneur
                 sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data $IMAGE_NAME'
                 sh 'sleep 5'
-                sh 'curl -u admin:admin http://localhost:5000/SUPMIT/api/v1.0/get_student_ages'
+                sh 'curl -u admin:admin http://localhost:5000/supmit/api/v1.0/get_student_ages'
                 sh 'docker stop api_test && docker rm api_test'
             }
         }
