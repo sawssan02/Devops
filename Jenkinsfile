@@ -15,7 +15,7 @@ pipeline {
 
         stage('Build Docker image') {
             steps {
-                dir('api') {
+                dir('simple_api') {
                     sh 'docker build -t $IMAGE_NAME .'
                 }
             }
