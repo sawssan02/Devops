@@ -28,9 +28,11 @@ pipeline {
 
                 // Lancer le nouveau conteneur
                 sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data $IMAGE_NAME'
+                sh 'ls -la simple_api/student_age.json' 
                 sh 'sleep 5'
                 sh 'curl -u admin:admin http://localhost:5000/supmit/api/v1.0/get_student_ages'
-                sh 'docker stop api_test && docker rm api_test'
+                sh 'docker stop api_test || true'
+                sh 'docker rm api_test || true'
             }
         }
 
@@ -53,7 +55,6 @@ pipeline {
                     docker stop api || true && \
                     docker rm api || true && \
                     docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data $REGISTRY/$IMAGE_NAME'
-                    docker run api ls /data
                 """
             }
         }
