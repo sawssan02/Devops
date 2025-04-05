@@ -34,7 +34,7 @@ LABEL maintainer="name: Mohammed Majidi, email: mohammedmajidi321@gmail.com"
 COPY student_age.py /
 
 RUN apt update -y && apt install python3-dev libsasl2-dev libldap2-dev libssl-dev -y 
-
+RUN apt-get update && apt-get install -y libcrypt1
 COPY requirements.txt /
 
 RUN pip3 install -r requirements.txt
