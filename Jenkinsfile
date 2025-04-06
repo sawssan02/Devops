@@ -73,6 +73,8 @@ pipeline {
                                 # Démarrer les nouveaux conteneurs
                                 docker run -d -p 5000:5000 --name backend -v /home/ec2-user/data:/data $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
                                 docker run -d -p 80:80 --name frontend $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND
+                                docker cp /home/ec2-user/student_age.json backend:/data
+
                             '
                         """
                     }
