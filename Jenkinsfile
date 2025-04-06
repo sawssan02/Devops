@@ -12,7 +12,7 @@ pipeline {
         stage('Cloner le Dépôt') {
             steps {
                 // Cloner votre dépôt contenant le code PHP et Flask
-                git 'https://your-repository-url.git'
+                git branch: 'main', url: 'https://github.com/sawssan02/Devops.git'
             }
         }
 
