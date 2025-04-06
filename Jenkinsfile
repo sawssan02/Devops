@@ -6,58 +6,7 @@ pipeline {
         DOCKER_IMAGE_BACKEND = 'sawssan02/backend:1.0'
         DOCKER_REGISTRY = 'docker.io'
         AWS_EC2_INSTANCE = 'ec2-user@13.61.3.10'
-    }
-
-    stages {
-        stage('Cloner le Dépôt') {
-            steps {
-                // Cloner votre dépôt contenant le code PHP et Flask
-                git branch: 'main', url: 'https://github.com/sawssan02/Devops.git'
-            }
-        }
-
-        stage('Construire l\'Image Docker Frontend') {
-            steps {
-                script {
-                    // Construire l'image pour le frontend PHP
-                    sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./website'
-                }
-            }
-        }
-
-        stage('Construire l\'Image Docker Backend') {
-            steps {
-                script {
-                    // Construire l'image pour le backend Flask
-                    sh 'docker build -t $DOCKER_IMAGE_BACKEND ./simple_api'
-                }
-            }
-        }
-
-        stage('Pousser les Images sur Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    script {
-                        // Connexion à Docker Hub avec les identifiants
-                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
-
-                        // Pousser les images Docker sur Docker Hub
-                        sh 'docker push $DOCKER_IMAGE_FRONTEND'
-                        sh 'docker push $DOCKER_IMAGE_BACKEND'
-                    }
-                }
-            }
-        }
-
-       pipeline {
-    agent any
-
-    environment {
-        DOCKER_IMAGE_FRONTEND = 'sawssan02/frontend:1.0'
-        DOCKER_IMAGE_BACKEND = 'sawssan02/backend:1.0'
-        DOCKER_REGISTRY = 'docker.io'
-        AWS_EC2_INSTANCE = 'ec2-user@13.61.3.10'
-        EC2_PRIVATE_KEY = credentials('aws-ec2-private-key') // Add your private key credential
+        EC2_PRIVATE_KEY = credentials('AWS_SSH_CREDENTIAL') // Add your private key credential
     }
 
     stages {
@@ -131,17 +80,6 @@ pipeline {
             }
         }
     }
-
-    post {
-        success {
-            echo 'Déploiement terminé avec succès.'
-        }
-        failure {
-            echo 'Échec du déploiement.'
-        }
-    }
-}
-
 
     post {
         success {
