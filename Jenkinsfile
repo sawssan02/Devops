@@ -2,76 +2,88 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "api:1.0"
-        REGISTRY = "docker.io/sawssan02"
+        DOCKER_IMAGE_FRONTEND = 'sawssan02/frontend:1.0'
+        DOCKER_IMAGE_BACKEND = 'sawssan02/backend:1.0'
+        DOCKER_REGISTRY = 'docker.io'
+        AWS_EC2_INSTANCE = 'ec2-user@13.61.3.10'
     }
 
     stages {
-        stage('Cloner le repo') {
+        stage('Cloner le Dépôt') {
             steps {
-                git branch: 'main', url: 'https://github.com/sawssan02/Devops.git'
+                // Cloner votre dépôt contenant le code PHP et Flask
+                git 'https://your-repository-url.git'
             }
         }
 
-        stage('Build Docker images') {
+        stage('Construire l\'Image Docker Frontend') {
             steps {
-                // Construire l'image API
-                dir('simple_api') {
-                    sh 'docker build --no-cache -t $IMAGE_NAME .'
+                script {
+                    // Construire l'image pour le frontend PHP
+                    sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./frontend'
                 }
             }
         }
 
-        stage('Test Docker image') {
+        stage('Construire l\'Image Docker Backend') {
             steps {
-                // Supprimer le conteneur s'il existe déjà
-                sh 'docker rm -f api_test || true'
-                // Lancer le nouveau conteneur
-                sh 'docker run -d -p 5000:5000 --name api_test -v /var/lib/jenkins/workspace/Deploye/simple_api:/data $IMAGE_NAME'
-                sh 'docker cp simple_api/student_age.json api_test:/data'
-                sh 'sleep 5'
-                sh 'curl -u root:root -X GET http://localhost:5000/supmit/api/v1.0/get_student_ages'
-                sh 'docker stop api_test && docker rm api_test'
-            }
-        }
-
-        stage('Pousser sur Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
-                    sh 'docker push $REGISTRY/$IMAGE_NAME'
+                script {
+                    // Construire l'image pour le backend Flask
+                    sh 'docker build -t $DOCKER_IMAGE_BACKEND ./backend'
                 }
             }
         }
 
-       stage('Déployer sur AWS') {
-    steps {
-        withCredentials([string(credentialsId: 'DOCKER_PASSWORD_CREDENTIAL', variable: 'DOCKER_PASSWORD')]) {
-    sshagent(['AWS_SSH_CREDENTIAL']) {
-        sh '''
-            ssh ec2-user@13.61.3.10 -o StrictHostKeyChecking=no '
-    echo "$DOCKER_PASSWORD" | docker login -u sawssan02 --password-stdin && \
-    docker pull docker.io/sawssan02/api:1.0 && \
-    
-    # Supprimer les conteneurs existants si nécessaire
-    docker stop api || true && \
-    docker rm api || true && \
-    
-    # Démarrer les nouveaux conteneurs
-    docker run -d -p 5000:5000 --name api -v /home/ubuntu/data:/data docker.io/sawssan02/api:1.0 && \
-    
-    # Copier le fichier dans le conteneur API
-    docker cp /home/ec2-user/student_age.json api:/data
-'
+        stage('Pousser les Images sur Docker Hub') {
+            steps {
+                script {
+                    // Se connecter à Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh """
+                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                            docker push $DOCKER_IMAGE_FRONTEND
+                            docker push $DOCKER_IMAGE_BACKEND
+                        """
+                    }
+                }
+            }
+        }
 
-        '''
+        stage('Déployer sur AWS EC2') {
+            steps {
+                script {
+                    // Déployer les images Docker sur le serveur AWS EC2
+                    sh """
+                        # Copier le fichier JSON de l'étudiant sur le serveur EC2
+                        scp -o StrictHostKeyChecking=no simple_api/student_age.json $AWS_EC2_INSTANCE:/home/ec2-user/student_age.json
+
+                        # Connecter à l'instance EC2 et effectuer le déploiement
+                        ssh -o StrictHostKeyChecking=no $AWS_EC2_INSTANCE '
+                            # Se connecter à Docker Hub et récupérer les dernières images
+                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin && 
+                            docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND &&
+                            docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
+
+                            # Arrêter et supprimer les conteneurs existants
+                            docker stop frontend || true && docker rm frontend || true &&
+                            docker stop backend || true && docker rm backend || true &&
+
+                            # Démarrer les nouveaux conteneurs
+                            docker run -d -p 5000:5000 --name backend -v /home/ec2-user/data:/data $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
+                            docker run -d -p 80:80 --name frontend $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND
+                        '
+                    """
+                }
+            }
+        }
     }
-}
 
-
-    }
-}
-// Nouvelle étape pour exécuter docker-compose
-        
+    post {
+        success {
+            echo 'Déploiement terminé avec succès.'
+        }
+        failure {
+            echo 'Échec du déploiement.'
+        }
     }
 }
