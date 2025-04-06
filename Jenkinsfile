@@ -6,13 +6,12 @@ pipeline {
         DOCKER_IMAGE_BACKEND = 'sawssan02/backend:1.0'
         DOCKER_REGISTRY = 'docker.io'
         AWS_EC2_INSTANCE = 'ec2-user@13.61.3.10'
-        EC2_PRIVATE_KEY = credentials('AWS_SSH_CREDENTIAL') // Add your private key credential
+        EC2_PRIVATE_KEY = credentials('AWS_SSH_CREDENTIAL') 
     }
 
     stages {
         stage('Cloner le Dépôt') {
             steps {
-                // Cloner votre dépôt contenant le code PHP et Flask
                 git branch: 'main', url: 'https://github.com/sawssan02/Devops.git'
             }
         }
@@ -20,7 +19,6 @@ pipeline {
         stage('Construire l\'Image Docker Frontend') {
             steps {
                 script {
-                    // Construire l'image pour le frontend PHP
                     sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./website'
                 }
             }
@@ -29,7 +27,6 @@ pipeline {
         stage('Construire l\'Image Docker Backend') {
             steps {
                 script {
-                    // Construire l'image pour le backend Flask
                     sh 'docker build -t $DOCKER_IMAGE_BACKEND ./simple_api'
                 }
             }
@@ -39,10 +36,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
-                        // Connexion à Docker Hub avec les identifiants
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
-
-                        // Pousser les images Docker sur Docker Hub
                         sh 'docker push $DOCKER_IMAGE_FRONTEND'
                         sh 'docker push $DOCKER_IMAGE_BACKEND'
                     }
@@ -54,7 +48,6 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
-                        // Déployer les images Docker sur le serveur AWS EC2
                         sh """
                             # Copier le fichier JSON de l'étudiant sur le serveur EC2
                             scp -i $EC2_PRIVATE_KEY -o StrictHostKeyChecking=no simple_api/student_age.json $AWS_EC2_INSTANCE:/home/ec2-user/student_age.json
@@ -74,7 +67,6 @@ pipeline {
                                 docker run -d -p 5000:5000 --name backend -v /home/ec2-user/data:/data $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
                                 docker run -d -p 80:80 --name frontend $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND
                                 docker cp /home/ec2-user/student_age.json backend:/data
-
                             '
                         """
                     }
