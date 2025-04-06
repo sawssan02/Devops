@@ -34,52 +34,51 @@ pipeline {
             }
         }
 
-       stage('Pousser les Images sur Docker Hub') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-            script {
-                // Connexion à Docker Hub avec les identifiants
-                sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+        stage('Pousser les Images sur Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    script {
+                        // Connexion à Docker Hub avec les identifiants
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
 
-                // Pousser les images Docker sur Docker Hub
-                sh 'docker push sawssan02/frontend:1.0'
-                sh 'docker push sawssan02/backend:1.0'
+                        // Pousser les images Docker sur Docker Hub
+                        sh 'docker push $DOCKER_IMAGE_FRONTEND'
+                        sh 'docker push $DOCKER_IMAGE_BACKEND'
+                    }
+                }
+            }
+        }
+
+        stage('Déployer sur AWS EC2') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    script {
+                        // Déployer les images Docker sur le serveur AWS EC2
+                        sh """
+                            # Copier le fichier JSON de l'étudiant sur le serveur EC2
+                            scp -o StrictHostKeyChecking=no simple_api/student_age.json $AWS_EC2_INSTANCE:/home/ec2-user/student_age.json
+
+                            # Connecter à l'instance EC2 et effectuer le déploiement
+                            ssh -o StrictHostKeyChecking=no $AWS_EC2_INSTANCE '
+                                # Se connecter à Docker Hub et récupérer les dernières images
+                                echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin &&
+                                docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND &&
+                                docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
+
+                                # Arrêter et supprimer les conteneurs existants
+                                docker stop frontend || true && docker rm frontend || true &&
+                                docker stop backend || true && docker rm backend || true &&
+
+                                # Démarrer les nouveaux conteneurs
+                                docker run -d -p 5000:5000 --name backend -v /home/ec2-user/data:/data $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
+                                docker run -d -p 80:80 --name frontend $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND
+                            '
+                        """
+                    }
+                }
             }
         }
     }
-}
-
-
-       stage('Déployer sur AWS EC2') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-            script {
-                // Déployer les images Docker sur le serveur AWS EC2
-                sh """
-                    # Copier le fichier JSON de l'étudiant sur le serveur EC2
-                    scp -o StrictHostKeyChecking=no simple_api/student_age.json $AWS_EC2_INSTANCE:/home/ec2-user/student_age.json
-
-                    # Connecter à l'instance EC2 et effectuer le déploiement
-                    ssh -o StrictHostKeyChecking=no $AWS_EC2_INSTANCE '
-                        # Se connecter à Docker Hub et récupérer les dernières images
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin &&
-                        docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND &&
-                        docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
-
-                        # Arrêter et supprimer les conteneurs existants
-                        docker stop frontend || true && docker rm frontend || true &&
-                        docker stop backend || true && docker rm backend || true &&
-
-                        # Démarrer les nouveaux conteneurs
-                        docker run -d -p 5000:5000 --name backend -v /home/ec2-user/data:/data $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND &&
-                        docker run -d -p 80:80 --name frontend $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND
-                    '
-                """
-            }
-        }
-    }
-}
-
 
     post {
         success {
