@@ -49,6 +49,58 @@ pipeline {
             }
         }
 
+       pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE_FRONTEND = 'sawssan02/frontend:1.0'
+        DOCKER_IMAGE_BACKEND = 'sawssan02/backend:1.0'
+        DOCKER_REGISTRY = 'docker.io'
+        AWS_EC2_INSTANCE = 'ec2-user@13.61.3.10'
+        EC2_PRIVATE_KEY = credentials('aws-ec2-private-key') // Add your private key credential
+    }
+
+    stages {
+        stage('Cloner le Dépôt') {
+            steps {
+                // Cloner votre dépôt contenant le code PHP et Flask
+                git branch: 'main', url: 'https://github.com/sawssan02/Devops.git'
+            }
+        }
+
+        stage('Construire l\'Image Docker Frontend') {
+            steps {
+                script {
+                    // Construire l'image pour le frontend PHP
+                    sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./website'
+                }
+            }
+        }
+
+        stage('Construire l\'Image Docker Backend') {
+            steps {
+                script {
+                    // Construire l'image pour le backend Flask
+                    sh 'docker build -t $DOCKER_IMAGE_BACKEND ./simple_api'
+                }
+            }
+        }
+
+        stage('Pousser les Images sur Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    script {
+                        // Connexion à Docker Hub avec les identifiants
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
+
+                        // Pousser les images Docker sur Docker Hub
+                        sh 'docker push $DOCKER_IMAGE_FRONTEND'
+                        sh 'docker push $DOCKER_IMAGE_BACKEND'
+                    }
+                }
+            }
+        }
+
         stage('Déployer sur AWS EC2') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
@@ -56,10 +108,10 @@ pipeline {
                         // Déployer les images Docker sur le serveur AWS EC2
                         sh """
                             # Copier le fichier JSON de l'étudiant sur le serveur EC2
-                            scp -o StrictHostKeyChecking=no simple_api/student_age.json $AWS_EC2_INSTANCE:/home/ec2-user/student_age.json
+                            scp -i $EC2_PRIVATE_KEY -o StrictHostKeyChecking=no simple_api/student_age.json $AWS_EC2_INSTANCE:/home/ec2-user/student_age.json
 
                             # Connecter à l'instance EC2 et effectuer le déploiement
-                            ssh -o StrictHostKeyChecking=no $AWS_EC2_INSTANCE '
+                            ssh -i $EC2_PRIVATE_KEY -o StrictHostKeyChecking=no $AWS_EC2_INSTANCE '
                                 # Se connecter à Docker Hub et récupérer les dernières images
                                 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin &&
                                 docker pull $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND &&
@@ -79,6 +131,17 @@ pipeline {
             }
         }
     }
+
+    post {
+        success {
+            echo 'Déploiement terminé avec succès.'
+        }
+        failure {
+            echo 'Échec du déploiement.'
+        }
+    }
+}
+
 
     post {
         success {
