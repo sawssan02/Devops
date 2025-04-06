@@ -20,7 +20,7 @@ pipeline {
             steps {
                 script {
                     // Construire l'image pour le frontend PHP
-                    sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./frontend'
+                    sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./website'
                 }
             }
         }
@@ -29,7 +29,7 @@ pipeline {
             steps {
                 script {
                     // Construire l'image pour le backend Flask
-                    sh 'docker build -t $DOCKER_IMAGE_BACKEND ./backend'
+                    sh 'docker build -t $DOCKER_IMAGE_BACKEND ./simple_api'
                 }
             }
         }
