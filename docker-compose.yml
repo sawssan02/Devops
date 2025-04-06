@@ -2,14 +2,20 @@ version: '3.7'
 
 services:
   backend:
-    build:
-      context: ./simple_api  # Dossier contenant le Dockerfile Flask
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./data:/data  # Montage du répertoire des données
-    environment:
-      - student_age_file_path=/data/student_age.json
+  build:
+    context: ./simple_api
+  ports:
+    - "5000:5000"
+  volumes:
+    - ./data:/data
+  environment:
+    - student_age_file_path=/data/student_age.json
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:5000/supmit/api/v1.0/get_student_ages"]
+    interval: 30s
+    retries: 3
+    start_period: 10s
+    timeout: 10s
 
   frontend:
     build:
