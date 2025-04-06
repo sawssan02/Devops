@@ -40,7 +40,8 @@ pipeline {
                     // Se connecter à Docker Hub
                      withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
                          sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
-                    sh 'docker push $REGISTRY/$IMAGE_NAME'
+                    sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND'
+                          sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND'
 
                     }
                 }
