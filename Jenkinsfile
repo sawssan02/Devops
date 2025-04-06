@@ -35,18 +35,20 @@ pipeline {
         }
 
         stage('Pousser les Images sur Docker Hub') {
-            steps {
-                script {
-                    // Se connecter à Docker Hub
-                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin'
-                    sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_FRONTEND'
-                          sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_BACKEND'
+    steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+            script {
+                // Connexion à Docker Hub avec les identifiants
+                sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
 
-                    }
-                }
+                // Pousser les images Docker sur Docker Hub
+                sh 'docker push sawssan02/frontend:1.0'
+                sh 'docker push sawssan02/backend:1.0'
             }
         }
+    }
+}
+
 
         stage('Déployer sur AWS EC2') {
             steps {
