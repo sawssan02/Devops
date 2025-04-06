@@ -34,13 +34,12 @@ pipeline {
             }
         }
 
-        stage('Pousser les Images sur Docker Hub') {
+       stage('Pousser les Images sur Docker Hub') {
     steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-
             script {
                 // Connexion à Docker Hub avec les identifiants
-                sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
 
                 // Pousser les images Docker sur Docker Hub
                 sh 'docker push sawssan02/frontend:1.0'
